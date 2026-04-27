@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:movie_deck/constants.dart';
-import 'package:movie_deck/providers/auth_provider.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:movie_deck/providers/providers.dart';
 import 'package:movie_deck/ui/screens/home_screen.dart';
 import 'package:movie_deck/ui/screens/signup_screen.dart';
 import 'package:movie_deck/ui/widgets/app_logo_widget.dart';
@@ -9,17 +9,17 @@ import 'package:movie_deck/ui/widgets/back_button_widget.dart';
 import 'package:movie_deck/ui/widgets/bezier_container_widget.dart';
 import 'package:movie_deck/ui/widgets/reusable_button_widget.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:provider/provider.dart';
+
 import '../config.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
 
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   TextEditingController _emailController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
@@ -47,9 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
             title,
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
-          SizedBox(
-            height: 10,
-          ),
+          SizedBox(height: 10),
           TextFormField(
             key: Key(title),
             obscureText: obscure,
@@ -59,23 +57,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 !isPassword ? TextInputType.emailAddress : TextInputType.text,
             decoration: InputDecoration(
               border: InputBorder.none,
-              errorStyle: TextStyle(
-                fontSize: 13.5,
-              ),
+              errorStyle: TextStyle(fontSize: 13.5),
               hintText: !isPassword ? "example@gmail.com" : "******",
-              prefixIcon: Icon(
-                icon,
-              ),
+              prefixIcon: Icon(icon),
               suffix: isPassword
                   ? InkWell(
-                      child: Icon(
-                        Icons.remove_red_eye,
-                        color: kBlackColor,
-                        size: 20,
-                      ),
-                      onTap: () {
-                        _toggle();
-                      },
+                      child: Icon(Icons.remove_red_eye,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          size: 20),
+                      onTap: () => _toggle(),
                     )
                   : null,
               fillColor: Color(0xfff3f3f4),
@@ -92,35 +82,28 @@ class _LoginScreenState extends State<LoginScreen> {
       margin: EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: <Widget>[
-          SizedBox(
-            width: 20,
-          ),
+          SizedBox(width: 20),
           Expanded(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 10),
-              child: Divider(
-                thickness: 1,
-              ),
+              child: Divider(thickness: 1),
             ),
           ),
           Text('or'),
           Expanded(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 10),
-              child: Divider(
-                thickness: 1,
-              ),
+              child: Divider(thickness: 1),
             ),
           ),
-          SizedBox(
-            width: 20,
-          ),
+          SizedBox(width: 20),
         ],
       ),
     );
   }
 
   Widget _createAccount() {
+    final colors = Theme.of(context).colorScheme;
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -134,12 +117,14 @@ class _LoginScreenState extends State<LoginScreen> {
           text: TextSpan(
             text: 'Don\'t have an account ?  ',
             style: TextStyle(
-                fontSize: 15, fontWeight: FontWeight.w600, color: kBlackColor),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: colors.onSurface),
             children: [
               TextSpan(
                 text: 'Register',
                 style: TextStyle(
-                    color: Color(0xfff79c4f),
+                    color: colors.primary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600),
               ),
@@ -152,6 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
         body: Form(
       key: _formKey,
@@ -199,35 +185,30 @@ class _LoginScreenState extends State<LoginScreen> {
                       context: context,
                       text: "Login",
                       onTap: () async {
-                        print("Validated ${_formKey.currentState!.validate()}");
                         if (_formKey.currentState!.validate()) {
                           _formKey.currentState!.save();
                           FocusScope.of(context).unfocus();
-                          var res = await Provider.of<AuthProvider>(context,
-                                  listen: false)
+                          await ref
+                              .read(authProvider.notifier)
                               .signInWithEmailAndPassword(
-                            email: _emailController.text.trim(),
-                            password: _passwordController.text.trim(),
-                          )
+                                email: _emailController.text.trim(),
+                                password: _passwordController.text.trim(),
+                              )
                               .then((value) async {
                             if (value >= 0) {
                               switch (value) {
                                 case 0:
-                                  {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                            content: Text(
-                                                "No user found for that email")));
-                                    break;
-                                  }
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              "No user found for that email")));
+                                  break;
                                 case 1:
-                                  {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                            content: Text(
-                                                "Wrong password provided for the user")));
-                                    break;
-                                  }
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              "Wrong password provided for the user")));
+                                  break;
                               }
                             } else {
                               bool success = await showDialog(
@@ -246,14 +227,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                       child: Row(
                                         children: [
                                           CircularProgressIndicator(),
-                                          SizedBox(
-                                            width: 15,
-                                          ),
+                                          SizedBox(width: 15),
                                           Text(
                                             'Please wait, authenticating...',
                                             style: GoogleFonts.lato(
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                                fontWeight: FontWeight.bold),
                                           ),
                                         ],
                                       ),
@@ -262,10 +240,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                               );
                               if (success) {
-                                Navigator.of(context).pushAndRemoveUntil(PageTransition(
-                                  type: PageTransitionType.rightToLeft,
-                                  child: HomeScreen(),
-                                ), (route) => false);
+                                Navigator.of(context).pushAndRemoveUntil(
+                                    PageTransition(
+                                      type: PageTransitionType.rightToLeft,
+                                      child: HomeScreen(),
+                                    ),
+                                    (route) => false);
                                 _emailController.clear();
                                 _passwordController.clear();
                               }
@@ -278,7 +258,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     InkWell(
                       onTap: () {
                         FocusScope.of(context).unfocus();
-                        Provider.of<AuthProvider>(context, listen: false)
+                        ref
+                            .read(authProvider.notifier)
                             .signInWithGoogle()
                             .whenComplete(() async {
                           bool success = await showDialog(
@@ -297,14 +278,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: Row(
                                     children: [
                                       CircularProgressIndicator(),
-                                      SizedBox(
-                                        width: 15,
-                                      ),
+                                      SizedBox(width: 15),
                                       Text(
                                         'Please wait, authenticating...',
                                         style: GoogleFonts.lato(
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                            fontWeight: FontWeight.bold),
                                       ),
                                     ],
                                   ),
@@ -313,10 +291,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           );
                           if (success) {
-                            Navigator.of(context).pushAndRemoveUntil(PageTransition(
-                              type: PageTransitionType.rightToLeft,
-                              child: HomeScreen(),
-                            ), (route) => false);
+                            Navigator.of(context).pushAndRemoveUntil(
+                                PageTransition(
+                                  type: PageTransitionType.rightToLeft,
+                                  child: HomeScreen(),
+                                ),
+                                (route) => false);
                             _emailController.clear();
                             _passwordController.clear();
                           }
@@ -335,18 +315,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               height: 55,
                               padding: EdgeInsets.all(8),
                               margin: EdgeInsets.only(right: 20),
-                              color: kWhiteColor,
-                              child: Image.asset(
-                                "assets/google_logo.png",
-                              ),
+                              color: colors.surface,
+                              child: Image.asset("assets/google_logo.png"),
                             ),
                             Expanded(
                               child: Text(
                                 'Sign in with Google',
                                 style: TextStyle(
-                                  color: kWhiteColor,
-                                  fontSize: 19,
-                                ),
+                                    color: colors.onPrimary, fontSize: 19),
                               ),
                             ),
                           ],

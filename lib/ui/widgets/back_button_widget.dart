@@ -6,12 +6,12 @@ Widget backButton(BuildContext context) {
       Navigator.pop(context);
     },
     child: Container(
-      padding: EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Container(
-        padding: EdgeInsets.only(left: 0, top: 10, bottom: 10),
+        padding: const EdgeInsets.only(left: 0, top: 10, bottom: 10),
         child: Icon(
           Icons.keyboard_arrow_left,
-          color: Colors.black,
+          color: Theme.of(context).colorScheme.onSurface,
           size: 35,
         ),
       ),

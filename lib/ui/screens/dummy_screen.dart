@@ -1,61 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../constants.dart';
+import 'package:page_transition/page_transition.dart';
+
+import '../widgets/back_button_widget.dart';
+import 'signup_screen.dart';
 
 class DummyScreen extends StatefulWidget {
   const DummyScreen({Key? key}) : super(key: key);
 
   @override
-  _DummyScreenState createState() => _DummyScreenState();
+  State<DummyScreen> createState() => _DummyScreenState();
 }
 
 class _DummyScreenState extends State<DummyScreen> {
-
-  showLoginDialog() {
+  void _showLoginDialog() {
+    final colors = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (_) => AlertDialog(
-        title: Container(
-          child: Row(
-            children: [
-              Icon(
-                FontAwesomeIcons.exclamationCircle,
-                color: Colors.red,
-              ),
-              SizedBox(
-                width: 10,
-              ),
-              Text('Sorry', style: GoogleFonts.lato(fontWeight: FontWeight.bold,),),
-            ],
-          ),
+        title: Row(
+          children: [
+            const FaIcon(FontAwesomeIcons.circleExclamation, color: Colors.red),
+            const SizedBox(width: 10),
+            Text('Sorry', style: GoogleFonts.lato(fontWeight: FontWeight.bold)),
+          ],
         ),
-        content: Container(
+        content: SizedBox(
           height: 50,
           child: Center(
             child: Text(
-              'Please login or register to continue!!',
-              style: TextStyle(
-                color: Colors.grey[800],
-                fontSize: 18,
-              ),
+              'Please login or register to continue!',
+              style: TextStyle(color: colors.onSurfaceVariant, fontSize: 17),
             ),
           ),
         ),
-        actions: <Widget>[
+        actions: [
           TextButton(
             child: Text(
-              'OK',
-              style: TextStyle(
-                color: kBlackColor,
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
+              'Cancel',
+              style: TextStyle(color: colors.outline, fontSize: 15),
             ),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          FilledButton(
             onPressed: () {
               Navigator.of(context).pop();
+              Navigator.of(context).push(
+                PageTransition(
+                  child: const SignupScreen(),
+                  type: PageTransitionType.rightToLeft,
+                ),
+              );
             },
+            child: const Text(
+              'Register / Login',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -64,61 +66,56 @@ class _DummyScreenState extends State<DummyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kWhiteColor,
       resizeToAvoidBottomInset: false,
       body: NestedScrollView(
         headerSliverBuilder: (_, bool innerBoxIsScrolled) {
           return [
             SliverPadding(
-              padding: EdgeInsets.only(top: 24),
+              padding: const EdgeInsets.only(top: 24),
               sliver: SliverToBoxAdapter(
                 child: Container(
                   height: 100,
-                  padding: EdgeInsets.only(left: 20, top: 20, right: 20),
+                  padding: const EdgeInsets.only(left: 4, top: 20, right: 20),
                   child: Row(
                     children: [
+                      backButton(context),
                       Expanded(
-                        child: Container(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Welcome,',
-                                style: GoogleFonts.ubuntu(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.bold,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome,',
+                              style: GoogleFonts.ubuntu(
+                                  fontSize: 36, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            RichText(
+                              text: TextSpan(
+                                text: "Guest! ",
+                                style: GoogleFonts.openSans(
+                                  fontSize: 17,
+                                  color: colors.primary,
+                                  fontWeight: FontWeight.w700,
                                 ),
+                                children: const [TextSpan(text: "👋")],
                               ),
-                              SizedBox(
-                                height: 4,
-                              ),
-                              RichText(
-                                text: TextSpan(
-                                  text: "User! ",
-                                  style: GoogleFonts.openSans(
-                                    fontSize: 17,
-                                    color: kPrimaryColor,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                  children: [
-                                    TextSpan(
-                                      text: "😀",
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                      InkWell(
-                        onTap: () => showLoginDialog(),
-                        child: Icon(
-                          Icons.logout,
-                          size: 30,
-                        ),
+                      FilledButton.tonal(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            PageTransition(
+                              child: const SignupScreen(),
+                              type: PageTransitionType.rightToLeft,
+                            ),
+                          );
+                        },
+                        child: const Text('Login'),
                       ),
                     ],
                   ),
@@ -128,47 +125,39 @@ class _DummyScreenState extends State<DummyScreen> {
             SliverToBoxAdapter(
               child: Container(
                 height: 50,
-                margin: EdgeInsets.fromLTRB(20, 25, 20, 30),
+                margin: const EdgeInsets.fromLTRB(20, 25, 20, 30),
                 child: TextFormField(
                   enabled: false,
                   decoration: InputDecoration(
-                    fillColor: Colors.grey[300],
-                    focusColor: Colors.grey[300],
-                    hoverColor: Colors.grey[300],
-                    contentPadding: EdgeInsets.only(top: 3),
+                    fillColor: colors.surfaceContainerHighest,
+                    contentPadding: const EdgeInsets.symmetric(
+                        vertical: 14, horizontal: 12),
                     hintText: "Search for any movie",
-                    prefixIcon: Icon(
-                      FontAwesomeIcons.search,
-                      size: 18,
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.only(left: 16, right: 12),
+                      child: FaIcon(FontAwesomeIcons.magnifyingGlass,
+                          size: 18, color: colors.outline),
                     ),
+                    prefixIconConstraints:
+                        const BoxConstraints(minWidth: 0, minHeight: 0),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
+                        borderRadius: BorderRadius.circular(28)),
                   ),
                 ),
               ),
             ),
             SliverToBoxAdapter(
               child: Container(
-                margin: EdgeInsets.fromLTRB(20, 5, 20, 0),
+                margin: const EdgeInsets.fromLTRB(20, 5, 20, 0),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
                         'My Watchlist',
                         style: GoogleFonts.openSans(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    InkWell(
-                      onTap: () => showLoginDialog(),
-                      child: Icon(
-                        FontAwesomeIcons.sort,
-                        size: 18,
-                      ),
-                    )
                   ],
                 ),
               ),
@@ -176,31 +165,48 @@ class _DummyScreenState extends State<DummyScreen> {
           ];
         },
         body: Container(
-          padding: EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Center(
-            child: Text(
-              "Use the Add Button below to add movies to your watchlist :)",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.movie_filter,
+                    size: 64, color: colors.primary.withValues(alpha: 0.5)),
+                const SizedBox(height: 16),
+                Text(
+                  "Register or login to start building your movie watchlist and get AI-powered recommendations!",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                      fontSize: 16, color: colors.onSurfaceVariant),
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      PageTransition(
+                        child: const SignupScreen(),
+                        type: PageTransitionType.rightToLeft,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Get Started'),
+                ),
+              ],
             ),
           ),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Container(
+      floatingActionButton: SizedBox(
         height: 60,
         width: 60,
         child: FittedBox(
           child: FloatingActionButton(
-            onPressed: () => showLoginDialog(),
+            onPressed: () => _showLoginDialog(),
             elevation: 10,
-            backgroundColor: kPrimaryColor,
-            child: Icon(
-              Icons.add,
-              color: kWhiteColor,
-            ),
+            backgroundColor: colors.primary,
+            child: Icon(Icons.add, color: colors.onPrimary),
           ),
         ),
       ),

@@ -1,103 +1,136 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:movie_deck/data/local/session_storage.dart';
 import 'package:movie_deck/ui/config.dart';
 
-class AuthProvider with ChangeNotifier {
+class AuthState {
+  final User? user;
+  final String? errorMessage;
+
+  const AuthState({this.user, this.errorMessage});
+
+  AuthState copyWith(
+      {User? user,
+      String? errorMessage,
+      bool clearError = false,
+      bool clearUser = false}) {
+    return AuthState(
+      user: clearUser ? null : (user ?? this.user),
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    );
+  }
+}
+
+class AuthNotifier extends Notifier<AuthState> {
   late final FirebaseAuth _auth;
+  late final SessionStorage _session;
 
-  AuthProvider(this._auth);
+  @override
+  AuthState build() {
+    _auth = FirebaseAuth.instance;
+    _session = SessionStorage(App.fss);
+    return const AuthState();
+  }
 
-  User? _user;
-  User? get user => _user;
   Stream<User?> get authState => _auth.idTokenChanges();
 
-  Future<int> signUpWithEmailAndPassword({required String name, required String email, required String password}) async{
+  void clearError() {
+    state = state.copyWith(clearError: true);
+  }
+
+  Future<int> signUpWithEmailAndPassword({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
     try {
-      await _auth.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-      ).then((auth) => _user = auth.user);
-      await _user!.updateDisplayName(name);
-      await _user!.reload();
+      final auth = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = auth.user;
+      await user!.updateDisplayName(name);
+      await user.reload();
       User? updatedUser = _auth.currentUser;
-      print('USERNAME IS: ${updatedUser!.displayName}');
-      if(user != null) {
-        await App.fss.write(key: "uid", value: updatedUser.uid);
-        await App.fss.write(key: "email", value: updatedUser.email);
-        await App.fss.write(key: "name", value: updatedUser.displayName);
+      if (updatedUser != null) {
+        await _session.saveUser(updatedUser);
       }
+      state = state.copyWith(user: updatedUser);
       return -1;
     } on FirebaseAuthException catch (e) {
-      if (e.code == "email-already-in-use"){
-        print("already in use");
-        return 0;
-      }
-      else if(e.code == "weak-password") {
-        print("weak pass");
-        return 1;
-      }
-      print("done ${e.code}");
+      if (e.code == "email-already-in-use") return 0;
+      if (e.code == "weak-password") return 1;
+      return 2;
+    } catch (e) {
+      state = state.copyWith(
+          errorMessage: 'An unexpected error occurred. Please try again.');
+      debugPrint('signUp error: $e');
       return 2;
     }
   }
 
-  Future<int> signInWithEmailAndPassword({required String email, required String password}) async {
+  Future<int> signInWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
     try {
-      await _auth.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-      ).then((auth) => _user = auth.user);
-      if(user != null) {
-        await App.fss.write(key: "uid", value: user!.uid);
-        await App.fss.write(key: "email", value: user!.email);
-        await App.fss.write(key: "name", value: user!.displayName);
+      final auth = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = auth.user;
+      if (user != null) {
+        await _session.saveUser(user);
       }
+      state = state.copyWith(user: user);
       return -1;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        print('No user found for that email.');
-        return 0;
-      } else if (e.code == 'wrong-password') {
-        print('Wrong password provided for that user.');
-        return 1;
-      }
+      if (e.code == 'user-not-found') return 0;
+      if (e.code == 'wrong-password') return 1;
+      return 2;
+    } catch (e) {
+      state = state.copyWith(
+          errorMessage: 'An unexpected error occurred. Please try again.');
+      debugPrint('signIn error: $e');
       return 2;
     }
   }
 
   Future<bool> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignInAccount googleUser =
+          await GoogleSignIn.instance.authenticate();
 
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
-      // Create a new credential
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      await _auth.signInWithCredential(credential).then((auth) => _user = auth.user);
-      print("Google user $_user");
-      if(user != null) {
-        await App.fss.write(key: "uid", value: user!.uid);
-        await App.fss.write(key: "email", value: user!.email);
-        await App.fss.write(key: "name", value: user!.displayName);
-        print(await App.fss.read(key: "name"));
+      final auth = await _auth.signInWithCredential(credential);
+      final user = auth.user;
+      if (user != null) {
+        await _session.saveUser(user);
       }
+      state = state.copyWith(user: user);
       return true;
     } catch (e) {
-      print(e);
+      debugPrint('Google sign-in error: $e');
       return false;
     }
   }
 
   Future signOut() async {
-    _auth.signOut();
-    await App.fss.deleteAll();
-    return Future.delayed(Duration.zero);
+    try {
+      await _auth.signOut();
+      await _session.clearAll();
+      state = state.copyWith(clearUser: true);
+    } catch (e) {
+      state =
+          state.copyWith(errorMessage: 'Failed to sign out. Please try again.');
+      debugPrint('signOut error: $e');
+    }
   }
 }

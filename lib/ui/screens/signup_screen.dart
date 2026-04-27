@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:movie_deck/providers/auth_provider.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:movie_deck/providers/providers.dart';
 import 'package:movie_deck/ui/config.dart';
 import 'package:movie_deck/ui/screens/login_screen.dart';
 import 'package:movie_deck/ui/widgets/app_logo_widget.dart';
@@ -8,18 +9,17 @@ import 'package:movie_deck/ui/widgets/back_button_widget.dart';
 import 'package:movie_deck/ui/widgets/bezier_container_widget.dart';
 import 'package:movie_deck/ui/widgets/reusable_button_widget.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:provider/provider.dart';
-import '../../constants.dart';
+
 import 'home_screen.dart';
 
-class SignupScreen extends StatefulWidget {
+class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
 
   @override
-  _SignupScreenState createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   TextEditingController _userNameController = TextEditingController();
   TextEditingController _emailController = TextEditingController();
@@ -32,26 +32,23 @@ class _SignupScreenState extends State<SignupScreen> {
     });
   }
 
-  Widget _entryField(
-      {required String title,
-      required IconData icon,
-      required TextEditingController controller,
-      obscure,
-      isPassword,
-      FormFieldValidator? validate,
-      required String hint,}) {
+  Widget _entryField({
+    required String title,
+    required IconData icon,
+    required TextEditingController controller,
+    obscure,
+    isPassword,
+    FormFieldValidator? validate,
+    required String hint,
+  }) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            title,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-          SizedBox(
-            height: 10,
-          ),
+          Text(title,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          SizedBox(height: 10),
           TextFormField(
             key: Key(title),
             obscureText: obscure,
@@ -61,23 +58,15 @@ class _SignupScreenState extends State<SignupScreen> {
                 !isPassword ? TextInputType.emailAddress : TextInputType.text,
             decoration: InputDecoration(
               border: InputBorder.none,
-              errorStyle: TextStyle(
-                fontSize: 13.5,
-              ),
+              errorStyle: TextStyle(fontSize: 13.5),
               hintText: hint,
-              prefixIcon: Icon(
-                icon,
-              ),
+              prefixIcon: Icon(icon),
               suffix: isPassword
                   ? InkWell(
-                      child: Icon(
-                        Icons.remove_red_eye,
-                        color: kBlackColor,
-                        size: 20,
-                      ),
-                      onTap: () {
-                        _toggle();
-                      },
+                      child: Icon(Icons.remove_red_eye,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          size: 20),
+                      onTap: () => _toggle(),
                     )
                   : null,
               fillColor: Color(0xfff3f3f4),
@@ -90,15 +79,13 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _loginLabel() {
+    final colors = Theme.of(context).colorScheme;
     return InkWell(
       onTap: () {
         Navigator.push(
-          context,
-          PageTransition(
-            type: PageTransitionType.rightToLeft,
-            child: LoginScreen(),
-          ),
-        );
+            context,
+            PageTransition(
+                type: PageTransitionType.rightToLeft, child: LoginScreen()));
       },
       child: Container(
         margin: EdgeInsets.symmetric(vertical: 20),
@@ -108,15 +95,14 @@ class _SignupScreenState extends State<SignupScreen> {
           text: TextSpan(
             text: 'Already have an account ?  ',
             style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: kBlackColor,
-            ),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: colors.onSurface),
             children: [
               TextSpan(
                 text: 'Login',
                 style: TextStyle(
-                    color: Color(0xfff79c4f),
+                    color: colors.primary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600),
               ),
@@ -159,61 +145,68 @@ class _SignupScreenState extends State<SignupScreen> {
                         controller: _userNameController,
                         obscure: false,
                         isPassword: false,
-                        validate: (name) => (name!.isEmpty) ? "Please enter a name" : null,
+                        validate: (name) =>
+                            (name!.isEmpty) ? "Please enter a name" : null,
                         hint: "John Doe",
                       ),
                       _entryField(
-                          title: "Email ",
-                          icon: Icons.email_outlined,
-                          controller: _emailController,
-                          obscure: false,
-                          isPassword: false,
-                          validate: (email) {
-                            if(!email.isEmpty) {
-                              bool emailValid = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(email);
-                              return !emailValid ? "Invalid email address": null;
-                            } else {
-                              return "Please enter an email address";
-                            }
-                          },
+                        title: "Email ",
+                        icon: Icons.email_outlined,
+                        controller: _emailController,
+                        obscure: false,
+                        isPassword: false,
+                        validate: (email) {
+                          if (!email.isEmpty) {
+                            bool emailValid = RegExp(
+                                    r"^[a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+                                .hasMatch(email);
+                            return !emailValid ? "Invalid email address" : null;
+                          } else {
+                            return "Please enter an email address";
+                          }
+                        },
                         hint: "johndoe@gmail.com",
                       ),
                       _entryField(
-                          title: "Password",
-                          icon: Icons.lock,
-                          controller: _passwordController,
-                          obscure: _isPassword,
-                          isPassword: true,
-                          validate: (pass) => (pass!.isEmpty) ? "Please enter a password" : null,
+                        title: "Password",
+                        icon: Icons.lock,
+                        controller: _passwordController,
+                        obscure: _isPassword,
+                        isPassword: true,
+                        validate: (pass) =>
+                            (pass!.isEmpty) ? "Please enter a password" : null,
                         hint: "*******",
                       ),
-                      SizedBox(
-                        height: 30,
-                      ),
+                      SizedBox(height: 30),
                       submitButton(
                         context: context,
                         text: "Register",
                         onTap: () async {
-                          print("Validated ${_formKey.currentState!.validate()}");
-                          if (_formKey.currentState!.validate()){
+                          if (_formKey.currentState!.validate()) {
                             _formKey.currentState!.save();
                             FocusScope.of(context).unfocus();
-                            var res = await Provider.of<AuthProvider>(context, listen: false)
+                            await ref
+                                .read(authProvider.notifier)
                                 .signUpWithEmailAndPassword(
-                              email: _emailController.text.trim(),
-                              password: _passwordController.text.trim(),
-                              name: _userNameController.text.trim(),
-                            ).then((value) async {
-                              if(value >= 0) {
-                                switch(value) {
-                                  case 0: {
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Email is already in use")));
+                                  email: _emailController.text.trim(),
+                                  password: _passwordController.text.trim(),
+                                  name: _userNameController.text.trim(),
+                                )
+                                .then((value) async {
+                              if (value >= 0) {
+                                switch (value) {
+                                  case 0:
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                                "Email is already in use")));
                                     break;
-                                  }
-                                  case 1 : {
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password is too weak")));
+                                  case 1:
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                            content:
+                                                Text("Password is too weak")));
                                     break;
-                                  }
                                 }
                               } else {
                                 bool success = await showDialog(
@@ -224,17 +217,20 @@ class _SignupScreenState extends State<SignupScreen> {
                                       Navigator.of(context).pop(true);
                                     });
                                     return AlertDialog(
-                                      insetPadding: EdgeInsets.symmetric(horizontal: 10),
+                                      insetPadding:
+                                          EdgeInsets.symmetric(horizontal: 10),
                                       content: Container(
                                         height: 80,
                                         padding: EdgeInsets.only(right: 30),
                                         child: Row(
                                           children: [
                                             CircularProgressIndicator(),
-                                            SizedBox(
-                                              width: 15,
-                                            ),
-                                            Text('Please wait, signing you up...', style: GoogleFonts.lato(fontWeight: FontWeight.bold,),),
+                                            SizedBox(width: 15),
+                                            Text(
+                                                'Please wait, signing you up...',
+                                                style: GoogleFonts.lato(
+                                                    fontWeight:
+                                                        FontWeight.bold)),
                                           ],
                                         ),
                                       ),
@@ -242,10 +238,12 @@ class _SignupScreenState extends State<SignupScreen> {
                                   },
                                 );
                                 if (success) {
-                                  Navigator.of(context).pushAndRemoveUntil(PageTransition(
-                                    type: PageTransitionType.rightToLeft,
-                                    child: HomeScreen(),
-                                  ), (route) => false);
+                                  Navigator.of(context).pushAndRemoveUntil(
+                                      PageTransition(
+                                        type: PageTransitionType.rightToLeft,
+                                        child: HomeScreen(),
+                                      ),
+                                      (route) => false);
                                   _emailController.clear();
                                   _passwordController.clear();
                                 }
@@ -254,9 +252,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           }
                         },
                       ),
-                      SizedBox(
-                        height: 50,
-                      ),
+                      SizedBox(height: 50),
                       _loginLabel(),
                     ],
                   ),
