@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -31,6 +33,30 @@ class AuthNotifier extends Notifier<AuthState> {
   AuthState build() {
     _auth = FirebaseAuth.instance;
     _session = SessionStorage(App.fss);
+
+    // Initialize GoogleSignIn with serverClientId
+    final googleSignIn = GoogleSignIn.instance;
+    unawaited(
+      googleSignIn
+          .initialize(
+        serverClientId:
+            '993378690449-4o6fq418qqp4jto1iomgbd5eukaek7ne.apps.googleusercontent.com',
+      )
+          .then((_) {
+        // Listen to authentication events
+        googleSignIn.authenticationEvents.listen(
+          (event) {
+            debugPrint('Google Sign-In authentication event: $event');
+          },
+        ).onError((error) {
+          debugPrint('Google Sign-In error: $error');
+        });
+
+        // Attempt lightweight authentication
+        googleSignIn.attemptLightweightAuthentication();
+      }),
+    );
+
     return const AuthState();
   }
 
@@ -98,12 +124,17 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  Future<bool> signInWithGoogle() async {
+  Future<int> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount googleUser =
+      final GoogleSignInAccount? googleUser =
           await GoogleSignIn.instance.authenticate();
 
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      if (googleUser == null) {
+        return 0; // User cancelled
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
@@ -115,10 +146,12 @@ class AuthNotifier extends Notifier<AuthState> {
         await _session.saveUser(user);
       }
       state = state.copyWith(user: user);
-      return true;
+      return -1; // Success
     } catch (e) {
+      state = state.copyWith(
+          errorMessage: 'Google sign-in failed. Please try again.');
       debugPrint('Google sign-in error: $e');
-      return false;
+      return 1; // Error
     }
   }
 

@@ -41,13 +41,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     FormFieldValidator? validate,
     required String hint,
   }) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(title,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+              color: colors.onSurface,
+            ),
+          ),
           SizedBox(height: 10),
           TextFormField(
             key: Key(title),
@@ -69,7 +76,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       onTap: () => _toggle(),
                     )
                   : null,
-              fillColor: Color(0xfff3f3f4),
+              fillColor: colors.surfaceContainerHighest,
               filled: true,
             ),
           )

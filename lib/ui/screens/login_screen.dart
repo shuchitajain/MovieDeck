@@ -38,6 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       obscure,
       isPassword,
       FormFieldValidator? validate}) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10),
       child: Column(
@@ -45,7 +46,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         children: <Widget>[
           Text(
             title,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+              color: colors.onSurface,
+            ),
           ),
           SizedBox(height: 10),
           TextFormField(
@@ -68,7 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       onTap: () => _toggle(),
                     )
                   : null,
-              fillColor: Color(0xfff3f3f4),
+              fillColor: colors.surfaceContainerHighest,
               filled: true,
             ),
           )
@@ -261,44 +266,61 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ref
                             .read(authProvider.notifier)
                             .signInWithGoogle()
-                            .whenComplete(() async {
-                          bool success = await showDialog(
-                            context: context,
-                            barrierDismissible: true,
-                            builder: (_) {
-                              Future.delayed(Duration(seconds: 1), () {
-                                Navigator.of(context).pop(true);
-                              });
-                              return AlertDialog(
-                                insetPadding:
-                                    EdgeInsets.symmetric(horizontal: 10),
-                                content: Container(
-                                  height: 80,
-                                  padding: EdgeInsets.only(right: 30),
-                                  child: Row(
-                                    children: [
-                                      CircularProgressIndicator(),
-                                      SizedBox(width: 15),
-                                      Text(
-                                        'Please wait, authenticating...',
-                                        style: GoogleFonts.lato(
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                    ],
+                            .then((value) async {
+                          if (value >= 0) {
+                            switch (value) {
+                              case 0:
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content:
+                                            Text("Google sign-in cancelled")));
+                                break;
+                              case 1:
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content:
+                                            Text("Google sign-in failed")));
+                                break;
+                            }
+                          } else {
+                            bool success = await showDialog(
+                              context: context,
+                              barrierDismissible: true,
+                              builder: (_) {
+                                Future.delayed(Duration(seconds: 1), () {
+                                  Navigator.of(context).pop(true);
+                                });
+                                return AlertDialog(
+                                  insetPadding:
+                                      EdgeInsets.symmetric(horizontal: 10),
+                                  content: Container(
+                                    height: 80,
+                                    padding: EdgeInsets.only(right: 30),
+                                    child: Row(
+                                      children: [
+                                        CircularProgressIndicator(),
+                                        SizedBox(width: 15),
+                                        Text(
+                                          'Please wait, authenticating...',
+                                          style: GoogleFonts.lato(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                          );
-                          if (success) {
-                            Navigator.of(context).pushAndRemoveUntil(
-                                PageTransition(
-                                  type: PageTransitionType.rightToLeft,
-                                  child: HomeScreen(),
-                                ),
-                                (route) => false);
-                            _emailController.clear();
-                            _passwordController.clear();
+                                );
+                              },
+                            );
+                            if (success) {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                  PageTransition(
+                                    type: PageTransitionType.rightToLeft,
+                                    child: HomeScreen(),
+                                  ),
+                                  (route) => false);
+                              _emailController.clear();
+                              _passwordController.clear();
+                            }
                           }
                         });
                       },

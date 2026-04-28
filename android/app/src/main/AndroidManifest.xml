@@ -40,5 +40,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Google Sign-In serverClientId for Android -->
+        <meta-data
+            android:name="com.google.android.gms.web_client_id"
+            android:value="993378690449-4o6fq418qqp4jto1iomgbd5eukaek7ne.apps.googleusercontent.com" />
     </application>
 </manifest>

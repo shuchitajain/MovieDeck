@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:movie_deck/constants.dart';
-import 'package:movie_deck/ui/screens/dummy_screen.dart';
 import 'package:movie_deck/ui/widgets/app_logo_widget.dart';
 import 'package:movie_deck/ui/widgets/bezier_container_widget.dart';
 import 'package:page_transition/page_transition.dart';
+
 import '../config.dart';
+import 'dummy_screen.dart';
 import 'signup_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -17,6 +17,7 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _registerButton() {
+    final colors = Theme.of(context).colorScheme;
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -36,19 +37,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           borderRadius: BorderRadius.all(Radius.circular(25)),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: kGreyColor.withAlpha(100),
+              color: colors.outline.withAlpha(100),
               offset: Offset(2, 4),
               blurRadius: 8,
               spreadRadius: 2,
             )
           ],
-          color: kPrimaryColor,
+          color: colors.primary,
         ),
         child: Text(
           'Register or Login',
           style: TextStyle(
             fontSize: 20,
-            color: kWhiteColor,
+            color: colors.onPrimary,
           ),
         ),
       ),
@@ -56,13 +57,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _exploreButton() {
+    final colors = Theme.of(context).colorScheme;
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
           PageTransition(
             type: PageTransitionType.rightToLeft,
-            child: DummyScreen(),
+            child: const DummyScreen(),
           ),
         );
       },
@@ -73,13 +75,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(25)),
-          border: Border.all(color: kPrimaryColor, width: 2),
+          border: Border.all(color: colors.primary, width: 2),
         ),
         child: Text(
           'Explore',
           style: TextStyle(
             fontSize: 20,
-            color: kPrimaryColor,
+            color: colors.primary,
           ),
         ),
       ),

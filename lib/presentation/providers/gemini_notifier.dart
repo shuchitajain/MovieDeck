@@ -72,11 +72,11 @@ class GeminiNotifier extends Notifier<GeminiState> {
     final watchlistText = watchlist.isEmpty
         ? "The user hasn't added any movies yet."
         : watchlist
-              .map(
-                (m) =>
-                    '- ${m.name} (${m.genre.isEmpty ? "Unknown genre" : m.genre}), directed by ${m.director}',
-              )
-              .join('\n');
+            .map(
+              (m) =>
+                  '- ${m.name} (${m.genre.isEmpty ? "Unknown genre" : m.genre}), directed by ${m.director}',
+            )
+            .join('\n');
     final moodText = (mood != null && mood.isNotEmpty) ? '\nMood: $mood' : '';
     return '''
 You are a movie recommendation assistant. Recommend exactly 5 movies.
@@ -93,17 +93,20 @@ Do NOT include movies already in the watchlist.
   Future<void> getRecommendations(List<Movie> watchlist, {String? mood}) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
-    // Check offline → serve cache
+    // Check if cache is still valid (skip API call)
+    final cachedRecs = await _cache.read('last_recommendations');
+    if (cachedRecs != null) {
+      final recs = (cachedRecs as List)
+          .map((j) => Recommendation.fromJson(j as Map<String, dynamic>))
+          .toList();
+      state = state.copyWith(recommendations: recs, isLoading: false);
+      debugPrint('Served recommendations from cache (24h)');
+      return;
+    }
+
+    // Cache is expired or doesn't exist - check connection
     final online = await ConnectivityService.isOnline;
     if (!online) {
-      final cached = await _cache.read('last_recommendations');
-      if (cached != null) {
-        final recs = (cached as List)
-            .map((j) => Recommendation.fromJson(j as Map<String, dynamic>))
-            .toList();
-        state = state.copyWith(recommendations: recs, isLoading: false);
-        return;
-      }
       state = state.copyWith(
         error: 'You are offline. Connect to get AI recommendations.',
         isLoading: false,
@@ -137,11 +140,11 @@ Do NOT include movies already in the watchlist.
 
       state = state.copyWith(recommendations: recs, isLoading: false);
 
-      // Cache + fetch posters
+      // Cache for 24 hours (daily limit)
       await _cache.write(
         'last_recommendations',
         jsonList,
-        ttl: const Duration(hours: 2),
+        ttl: const Duration(hours: 24),
       );
 
       final tmdb = ref.read(tmdbRepositoryProvider);
@@ -198,8 +201,11 @@ Do NOT include movies already in the watchlist.
     if (msg.contains('503') || msg.contains('UNAVAILABLE')) {
       return 'AI is busy. Try again in a moment.';
     }
-    if (msg.contains('429') || msg.contains('quota')) {
-      return 'Rate limit reached. Wait a moment.';
+    if (msg.contains('429')) {
+      return 'Rate limit reached. Please wait before trying again.';
+    }
+    if (msg.contains('quota') || msg.contains('Quota exceeded')) {
+      return 'Daily quota reached. Try again tomorrow or check your API plan.';
     }
     if (msg.contains('401') || msg.contains('403') || msg.contains('API key')) {
       return 'API key issue. Check your .env file.';
